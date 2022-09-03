@@ -42,6 +42,11 @@ export type SubInstr = {
     readonly argc: 2
 }
 
+export const createSubInstr = (): SubInstr => ({
+    opcode: EOpCode.SUB,
+    argc: 2
+})
+
 export type MulInstr = {
     readonly opcode: EOpCode.MUL
     readonly argc: 2
@@ -67,9 +72,9 @@ export const createPushInstr = (value: IRValue): PushInstr => ({
 export type Instr = AddInstr | SubInstr | MulInstr | DivInstr | PushInstr
 
 export enum EIRValueType {
-    STRING,
-    NUMBER,
-    OBJECT,
+    STRING = 'STRING',
+    NUMBER = 'NUMBER',
+    OBJECT = 'OBJECT',
 }
 
 type StringIRValue = {

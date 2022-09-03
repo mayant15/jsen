@@ -20,6 +20,8 @@ export class VM {
         switch (instr.opcode) {
             case EOpCode.ADD:
                 return this._interpretAdd()
+            case EOpCode.SUB:
+                return this._interpretSub()
             case EOpCode.PUSH:
                 return this._interpretPush(instr.data)
             default:
@@ -48,10 +50,29 @@ export class VM {
         }
 
         if (a.kind !== b.kind) {
-            throw Error(`[vm] Add only takes parameters of the same type. Got "${a.kind.toString()}" and "${b.kind.toString()}"`)
+            throw Error(`[vm] ADD only takes parameters of the same type. Got "${a.kind.toString()}" and "${b.kind.toString()}"`)
         }
 
-        throw Error(`[vm] Add only supports numbers and strings. Got "${a.kind.toString()}"`)
+        throw Error(`[vm] ADD only supports numbers and strings. Got "${a.kind.toString()}"`)
+    }
+
+    private _interpretSub() {
+        const a = this._stack.pop();
+        const b = this._stack.pop();
+
+        if (a.kind === EIRValueType.NUMBER && b.kind === EIRValueType.NUMBER) {
+            this._stack.push({
+                kind: EIRValueType.NUMBER,
+                data: a.data - b.data
+            })
+            return
+        }
+
+        if (a.kind !== b.kind) {
+            throw Error(`[vm] SUB only takes parameters of the same type. Got "${a.kind.toString()}" and "${b.kind.toString()}"`)
+        }
+
+        throw Error(`[vm] SUB only supports numbers. Got "${a.kind.toString()}"`)
     }
 
     private _interpretPush(value: IRValue) {

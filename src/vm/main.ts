@@ -1,24 +1,41 @@
-import { createAddInstr, createPushInstr, EIRValueType, Program } from '../common/ir'
+import { createAddInstr, createPushInstr, createSubInstr, EIRValueType, Program } from '../common/ir'
 import { logger } from '../common/logger'
 import { VM } from './vm'
 
-const TEST_PROGRAM: Program = [
-    createPushInstr({
-        kind: EIRValueType.NUMBER,
-        data: 2,
-    }),
-    createPushInstr({
-        kind: EIRValueType.NUMBER,
-        data: 1,
-    }),
-    createAddInstr(),
+const TEST_PROGRAMS: Program[] = [
+    // ADD
+    [
+        createPushInstr({
+            kind: EIRValueType.NUMBER,
+            data: 2,
+        }),
+        createPushInstr({
+            kind: EIRValueType.NUMBER,
+            data: 1,
+        }),
+        createAddInstr(),
+    ],
+
+    // SUB
+    [
+        createPushInstr({
+            kind: EIRValueType.NUMBER,
+            data: 2,
+        }),
+        createPushInstr({
+            kind: EIRValueType.NUMBER,
+            data: 1,
+        }),
+        createSubInstr(),
+    ]
 ]
 
 async function main() {
-    const context = new VM(TEST_PROGRAM)
-    const result = context.run()
-
-    logger.info(`[driver] Result: `, result)
+    for (const program of TEST_PROGRAMS) {
+        const context = new VM(program)
+        const result = context.run()
+        logger.info(`[driver] Result: `, result)
+    }
 }
 
 main()
