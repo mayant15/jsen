@@ -2,7 +2,8 @@ const esbuild = require('esbuild');
 
 esbuild.build({
     entryPoints: ['src/index.ts'],
-    outdir: 'dist',
+    bundle: true,
+    outfile: './dist/index.js',
     format: 'cjs',
     platform: 'node',
 })
