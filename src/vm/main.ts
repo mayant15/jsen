@@ -1,6 +1,5 @@
-import fs from 'fs/promises'
-import { createAddInstr, createPushInstr, EIRValueType, Program } from './ir'
-import { logger } from './logger'
+import { createAddInstr, createPushInstr, EIRValueType, Program } from '../common/ir'
+import { logger } from '../common/logger'
 import { VM } from './vm'
 
 const TEST_PROGRAM: Program = [
@@ -16,16 +15,6 @@ const TEST_PROGRAM: Program = [
 ]
 
 async function main() {
-    const inputPath = process.argv[2]
-    if (!inputPath) {
-        throw Error("No input file provided")
-    }
-
-    const code = await fs.readFile(inputPath, {
-        encoding: 'utf8'
-    })
-    logger.info(`[driver] Read code: ${code}`)
-
     const context = new VM(TEST_PROGRAM)
     const result = context.run()
 

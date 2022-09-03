@@ -1,4 +1,4 @@
-import { EIRValueType, EOpCode, Instr, IRValue, Stack } from "./ir";
+import { EIRValueType, EOpCode, Instr, IRValue, Stack } from "../common/ir"
 
 export class VM {
     private _stack: Stack<IRValue>
