@@ -6,13 +6,13 @@ subset of ECMAScript with no GC.
 ## Features
 
 ### Supported JS
-- Math operations on literals
-- Stack
-- Primitive variables and runtime types
-- Heap
-- Objects (allocate/deallocate objects)
-- Functions
+- [ ] Math operations on literals
+- [ ] Stack
+- [ ] Primitive variables and runtime types
+- [ ] Heap
+- [ ] Objects (allocate/deallocate objects)
+- [ ] Functions
 
 ### Jsen
-- Allow adding functions to global object
+- [ ] Allow adding functions to global object
 
