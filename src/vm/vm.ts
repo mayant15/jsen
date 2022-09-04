@@ -4,20 +4,26 @@ import { Stack } from "./stack";
 export class VM {
     private _stack: Stack<AsmValue>
     private _program: Program
+    private _currentInstrIdx: number
 
     constructor(program: Program) {
         this._stack = new Stack<AsmValue>();
         this._program = program;
+        this._currentInstrIdx = 0;
     }
 
     run(): AsmValue {
-        for (const instr of this._program.instrs) {
-            this._interpret(instr)
+        while (this._currentInstrIdx < this._program.instrs.length) {
+            const nextInstrIdx = this._interpret(this._program.instrs[this._currentInstrIdx])
+            this._currentInstrIdx = nextInstrIdx ?? this._currentInstrIdx + 1
         }
+
+        // The top value of the stack is the program's result
         return this._stack.pop()
     }
 
-    private _interpret(instr: Instr) {
+    // _interpret returns the next instruction index to process, used for call or if instructions
+    private _interpret(instr: Instr): number | void {
         switch (instr.opcode) {
             case EOpCode.ADD:
                 return this._interpretAdd()
