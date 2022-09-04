@@ -1,23 +1,3 @@
-export class Stack<T> {
-    private _data: T[];
-
-    constructor() {
-        this._data = []
-    }
-
-    push(x: T) {
-        this._data.push(x);
-    }
-
-    pop(): T {
-        const val = this._data.pop()
-        if (val === undefined) {
-            throw Error('[vm] attempted to pop an empty stack')
-        }
-        return val
-    }
-}
-
 // A VM opcode pops n items from the stack, operates on them, then pushes the result onto the stack
 export enum EOpCode {
     ADD = 'ADD',  // a = pop(), b = pop(), push(a + b)
@@ -59,11 +39,11 @@ export type DivInstr = {
 
 export type PushInstr = {
     readonly opcode: EOpCode.PUSH
-    readonly data: IRValue
+    readonly data: AsmValue
     readonly argc: 1
 }
 
-export const createPushInstr = (value: IRValue): PushInstr => ({
+export const createPushInstr = (value: AsmValue): PushInstr => ({
     opcode: EOpCode.PUSH,
     data: value,
     argc: 1
@@ -71,28 +51,33 @@ export const createPushInstr = (value: IRValue): PushInstr => ({
 
 export type Instr = AddInstr | SubInstr | MulInstr | DivInstr | PushInstr
 
-export enum EIRValueType {
+export enum EAsmValueType {
     STRING = 'STRING',
     NUMBER = 'NUMBER',
     OBJECT = 'OBJECT',
 }
 
-type StringIRValue = {
-    kind: EIRValueType.STRING
+type StringAsmValue = {
+    kind: EAsmValueType.STRING
     data: string
 }
 
-type NumberIRValue = {
-    kind: EIRValueType.NUMBER
+type NumberAsmValue = {
+    kind: EAsmValueType.NUMBER
     data: number
 }
 
-type ObjectIRValue = {
-    kind: EIRValueType.OBJECT
+type ObjectAsmValue = {
+    kind: EAsmValueType.OBJECT
     data: Record<string, unknown>
 }
 
-export type IRValue = StringIRValue | NumberIRValue | ObjectIRValue
+export type AsmValue = StringAsmValue | NumberAsmValue | ObjectAsmValue
 
-export type Program = Instr[]
+export type Program = {
+    instrs: Instr[]
+
+    // Mapping from label name to index in instrs
+    labels: Record<string, number>
+}
 

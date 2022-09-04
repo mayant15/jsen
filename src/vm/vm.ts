@@ -1,16 +1,17 @@
-import { EIRValueType, EOpCode, Instr, IRValue, Stack } from "../common/ir"
+import { AsmValue, EAsmValueType, EOpCode, Instr, Program } from "../common/asm";
+import { Stack } from "./stack";
 
 export class VM {
-    private _stack: Stack<IRValue>
-    private _program: Instr[]
+    private _stack: Stack<AsmValue>
+    private _program: Program
 
-    constructor(program: Instr[]) {
-        this._stack = new Stack<IRValue>();
+    constructor(program: Program) {
+        this._stack = new Stack<AsmValue>();
         this._program = program;
     }
 
-    run(): IRValue {
-        for (const instr of this._program) {
+    run(): AsmValue {
+        for (const instr of this._program.instrs) {
             this._interpret(instr)
         }
         return this._stack.pop()
@@ -33,17 +34,17 @@ export class VM {
         const a = this._stack.pop();
         const b = this._stack.pop();
 
-        if (a.kind === EIRValueType.NUMBER && b.kind === EIRValueType.NUMBER) {
+        if (a.kind === EAsmValueType.NUMBER && b.kind === EAsmValueType.NUMBER) {
             this._stack.push({
-                kind: EIRValueType.NUMBER,
+                kind: EAsmValueType.NUMBER,
                 data: a.data + b.data
             })
             return
         }
 
-        if (a.kind === EIRValueType.STRING && b.kind === EIRValueType.STRING) {
+        if (a.kind === EAsmValueType.STRING && b.kind === EAsmValueType.STRING) {
             this._stack.push({
-                kind: EIRValueType.STRING,
+                kind: EAsmValueType.STRING,
                 data: a.data + b.data
             })
             return
@@ -60,9 +61,9 @@ export class VM {
         const a = this._stack.pop();
         const b = this._stack.pop();
 
-        if (a.kind === EIRValueType.NUMBER && b.kind === EIRValueType.NUMBER) {
+        if (a.kind === EAsmValueType.NUMBER && b.kind === EAsmValueType.NUMBER) {
             this._stack.push({
-                kind: EIRValueType.NUMBER,
+                kind: EAsmValueType.NUMBER,
                 data: a.data - b.data
             })
             return
@@ -75,7 +76,7 @@ export class VM {
         throw Error(`[vm] SUB only supports numbers. Got "${a.kind.toString()}"`)
     }
 
-    private _interpretPush(value: IRValue) {
+    private _interpretPush(value: AsmValue) {
         this._stack.push(value)
     }
 }

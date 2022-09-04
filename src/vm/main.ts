@@ -1,4 +1,4 @@
-import { Program } from '../common/ir'
+import { Program } from '../common/asm'
 import { logger } from '../common/logger'
 import { VM } from './vm'
 
