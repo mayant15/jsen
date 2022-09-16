@@ -29,9 +29,17 @@ export class VM {
                 return this._interpretAdd()
             case EOpCode.SUB:
                 return this._interpretSub()
+            case EOpCode.MUL:
+                return this._interpretMul()
+            case EOpCode.DIV:
+                return this._interpretDiv()
             case EOpCode.PUSH:
                 return this._interpretPush(instr.data)
             default:
+                // If all cases are handled above, TypeScript will give `instr` the type `never`, because
+                // this branch will never run. But I still want to keep this here so that I don't have to
+                // add this again when I add more opcodes to the enum.
+                // @ts-ignore
                 throw Error(`[vm] Unsupported instruction: ${instr.opcode.toString()}`)
         }
     }
@@ -80,6 +88,44 @@ export class VM {
         }
 
         throw Error(`[vm] SUB only supports numbers. Got "${a.kind.toString()}"`)
+    }
+
+    private _interpretMul() {
+        const a = this._stack.pop()
+        const b = this._stack.pop()
+
+        if (a.kind === EAsmValueType.NUMBER && b.kind === EAsmValueType.NUMBER) {
+            this._stack.push({
+                kind: EAsmValueType.NUMBER,
+                data: a.data * b.data
+            })
+            return
+        }
+
+        if (a.kind !== b.kind) {
+            throw Error(`[vm] MUL only takes parameters of the same type. Got "${a.kind.toString()}" and "${b.kind.toString()}"`)
+        }
+
+        throw Error(`[vm] MUL only supports numbers. Got "${a.kind.toString()}"`)
+    }
+
+    private _interpretDiv() {
+        const a = this._stack.pop()
+        const b = this._stack.pop()
+
+        if (a.kind === EAsmValueType.NUMBER && b.kind === EAsmValueType.NUMBER) {
+            this._stack.push({
+                kind: EAsmValueType.NUMBER,
+                data: a.data / b.data
+            })
+            return
+        }
+
+        if (a.kind !== b.kind) {
+            throw Error(`[vm] DIV only takes parameters of the same type. Got "${a.kind.toString()}" and "${b.kind.toString()}"`)
+        }
+
+        throw Error(`[vm] DIV only supports numbers. Got "${a.kind.toString()}"`)
     }
 
     private _interpretPush(value: AsmValue) {

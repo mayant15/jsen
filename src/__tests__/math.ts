@@ -36,5 +36,25 @@ describe('math', () => {
             })
         })
     })
+
+    describe('div', () => {
+        describe('literals', () => {
+            it('should divide two numbers', () => {
+                const { kind, data } = compileAndExecute('1 / 2')
+                expect(kind).toBe(EAsmValueType.NUMBER)
+                expect(data).toBe(0.5)
+            })
+        })
+    })
+
+    describe('mul', () => {
+        describe('literals', () => {
+            it('should multiply two numbers', () => {
+                const { kind, data } = compileAndExecute('2 * 3')
+                expect(kind).toBe(EAsmValueType.NUMBER)
+                expect(data).toBe(6)
+            })
+        })
+    })
 })
 

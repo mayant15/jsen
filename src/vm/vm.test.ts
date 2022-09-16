@@ -1,6 +1,6 @@
 import { VM } from './vm'
 import { describe, it, expect } from '@jest/globals'
-import { createAddInstr, createPushInstr, createSubInstr, EAsmValueType } from '../common/asm'
+import { createAddInstr, createDivInstr, createMulInstr, createPushInstr, createSubInstr, EAsmValueType } from '../common/asm'
 
 describe('vm', () => {
     describe('ADD', () => {
@@ -19,7 +19,8 @@ describe('vm', () => {
                 ],
                 labels: {}
             })
-            const { data } = vm.run()
+            const { kind, data } = vm.run()
+            expect(kind).toBe(EAsmValueType.NUMBER)
             expect(data).toBe(3)
         })
 
@@ -38,8 +39,31 @@ describe('vm', () => {
                 ],
                 labels: {}
             })
-            const { data } = vm.run()
+            const { kind, data } = vm.run()
+            expect(kind).toBe(EAsmValueType.STRING)
             expect(data).toBe('abcd')
+        })
+    })
+
+    describe('MUL', () => {
+        it('should return 2 * 3 = 6', () => {
+            const vm = new VM({
+                instrs: [
+                    createPushInstr({
+                        kind: EAsmValueType.NUMBER,
+                        data: 2,
+                    }),
+                    createPushInstr({
+                        kind: EAsmValueType.NUMBER,
+                        data: 3,
+                    }),
+                    createMulInstr(),
+                ],
+                labels: {}
+            })
+            const { kind, data } = vm.run()
+            expect(kind).toBe(EAsmValueType.NUMBER)
+            expect(data).toBe(6)
         })
     })
 
@@ -59,8 +83,52 @@ describe('vm', () => {
                 ],
                 labels: {}
             })
-            const { data } = vm.run()
+            const { kind, data } = vm.run()
+            expect(kind).toBe(EAsmValueType.NUMBER)
             expect(data).toBe(-1)
+        })
+    })
+
+    describe('DIV', () => {
+        it('should return 6 / 3 = 2', () => {
+            const vm = new VM({
+                instrs: [
+                    createPushInstr({
+                        kind: EAsmValueType.NUMBER,
+                        data: 3,
+                    }),
+                    createPushInstr({
+                        kind: EAsmValueType.NUMBER,
+                        data: 6,
+                    }),
+                    createDivInstr(),
+                ],
+                labels: {}
+            })
+            const { kind, data } = vm.run()
+            expect(kind).toBe(EAsmValueType.NUMBER)
+            expect(data).toBe(2)
+        })
+    })
+
+    describe('PUSH', () => {
+        it('should return last pushed value', () => {
+            const vm = new VM({
+                instrs: [
+                    createPushInstr({
+                        kind: EAsmValueType.NUMBER,
+                        data: 2,
+                    }),
+                    createPushInstr({
+                        kind: EAsmValueType.NUMBER,
+                        data: 1,
+                    }),
+                ],
+                labels: {}
+            })
+            const { kind, data } = vm.run()
+            expect(kind).toBe(EAsmValueType.NUMBER)
+            expect(data).toBe(1)
         })
     })
 })
