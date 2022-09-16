@@ -32,10 +32,20 @@ export type MulInstr = {
     readonly argc: 2
 }
 
+export const createMulInstr = (): MulInstr => ({
+    opcode: EOpCode.MUL,
+    argc: 2
+})
+
 export type DivInstr = {
     readonly opcode: EOpCode.DIV
     readonly argc: 2
 }
+
+export const createDivInstr = (): DivInstr => ({
+    opcode: EOpCode.DIV,
+    argc: 2
+})
 
 export type PushInstr = {
     readonly opcode: EOpCode.PUSH

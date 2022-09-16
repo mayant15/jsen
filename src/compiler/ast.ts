@@ -1,10 +1,14 @@
 import { ParseResult } from "@babel/parser";
-import type { File } from "@babel/types"
-import { logger } from "../common/logger";
+import type { BinaryExpression, ExpressionStatement, File, Program, Statement } from "@babel/types"
 
-export const toAst = (parsed: ParseResult<File>) => {
-    logger.warn('TODO: Implement parsed to ast')
-    logger.info(parsed)
-    return parsed
+export namespace Ast {
+    export type MainNode = Program
+    export type StatementNode = Statement
+    export type ExpressionNode = ExpressionStatement
+    export type BinaryExpressionNode = BinaryExpression
+}
+
+export const toAst = (parsed: ParseResult<File>): Ast.MainNode => {
+    return parsed.program
 }
 
