@@ -45,6 +45,12 @@ namespace AsmGenVisitor {
                     data: expr.right.value
                 }))
                 break;
+            case 'StringLiteral':
+                context.instrs.push(createPushInstr({
+                    kind: EAsmValueType.STRING,
+                    data: expr.right.value
+                }))
+                break;
             default:
                 throw Error(`[compiler] unsupported binary expression RHS type ${expr.right.type}`)
         }
@@ -54,6 +60,12 @@ namespace AsmGenVisitor {
             case 'NumericLiteral':
                 context.instrs.push(createPushInstr({
                     kind: EAsmValueType.NUMBER,
+                    data: expr.left.value
+                }))
+                break;
+            case 'StringLiteral':
+                context.instrs.push(createPushInstr({
+                    kind: EAsmValueType.STRING,
                     data: expr.left.value
                 }))
                 break;
