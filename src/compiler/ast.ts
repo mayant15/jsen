@@ -1,6 +1,5 @@
 import { ParseResult } from "@babel/parser";
 import type * as Babel from "@babel/types"
-import { logger } from "../common/logger";
 
 export namespace Ast {
     export type MainNode = {
@@ -24,27 +23,42 @@ export namespace Ast {
         value: string
     }
 
-    export type Expression = BinaryExpression | NumericLiteralExpression | StringLiteralExpression
+    export type IdentifierExpression = {
+        type: 'Identifier'
+        id: string
+    }
+
+    export type Expression = BinaryExpression | NumericLiteralExpression | StringLiteralExpression | IdentifierExpression
 
     export type ExpressionNode = {
         type: 'ExpressionStatement'
         expression: Expression
     }
 
-    export type StatementNode = ExpressionNode
+    export type VariableDeclarationNode = {
+        type: 'VariableDeclaration'
+        id: string
+        isConst: boolean
+        init: Expression | null
+    }
+
+    export type StatementNode = ExpressionNode | VariableDeclarationNode
 }
 
 function visitMain(node: Babel.Program): Ast.MainNode {
     return {
-        body: node.body.map(visitStatement)
+        body: node.body.flatMap(visitStatement)
     }
 }
 
-function visitStatement(node: Babel.Statement): Ast.StatementNode {
-    if (node.type === 'ExpressionStatement') {
-        return visitExpressionStatement(node)
-    } else {
-        throw Error(`[compiler] ParserError: Unsupported statement type ${node.type}`)
+function visitStatement(node: Babel.Statement): Ast.StatementNode[] {
+    switch (node.type) {
+        case 'ExpressionStatement':
+            return [visitExpressionStatement(node)]
+        case 'VariableDeclaration':
+            return visitVariableDeclaration(node)
+        default:
+            throw Error(`[compiler] ParserError: Unsupported statement type ${node.type}`)
     }
 }
 
@@ -77,15 +91,33 @@ function visitExpression(node: Babel.Expression): Ast.Expression {
                 right: visitExpression(node.right),
                 operator: node.operator as any // TODO: I don't want to support all operators right now
             }
+        case 'Identifier':
+            return {
+                type: 'Identifier',
+                id: node.name
+            }
         default:
             throw Error(`[compiler] ParserError: Unsupported expression type ${node.type}`)
     }
 }
 
+function visitVariableDeclaration(node: Babel.VariableDeclaration): Ast.VariableDeclarationNode[] {
+    const isConst = node.kind === 'const'
+    return node.declarations.map((decl): Ast.VariableDeclarationNode => {
+        if (decl.id.type !== 'Identifier') {
+            throw Error(`[compiler] ParserError: Unsupported assignment, only Identifiers allowed on LHS. Found ${decl.id.type}`)
+        }
+        return {
+            type: 'VariableDeclaration',
+            init: decl.init ? visitExpression(decl.init) : null,
+            id: decl.id.name,
+            isConst,
+        }
+    })
+}
+
 export const toAst = (parsed: ParseResult<Babel.File>): Ast.MainNode => {
-    // logger.info(JSON.stringify(parsed.program, null, 2))
     const ast = visitMain(parsed.program)
-    logger.info(JSON.stringify(ast, null, 2))
     return ast
 }
 
