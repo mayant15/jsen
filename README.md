@@ -6,9 +6,9 @@ subset of ECMAScript with no GC.
 ## Features
 
 ### Supported JS
-- [ ] Math operations on literals
-- [ ] Stack
-- [ ] Primitive variables and runtime types
+- [x] Math operations on literals
+- [x] Stack
+- [ ] Primitive variables and runtime types (All values are allocated on the heap)
 - [ ] Heap
 - [ ] Objects (allocate/deallocate objects)
 - [ ] Functions

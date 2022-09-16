@@ -1,14 +1,6 @@
 import { describe, it, expect } from '@jest/globals'
-import { AsmValue, EAsmValueType } from '../common/asm'
-import { compile } from '../compiler/compiler'
-import { VM } from '../vm/vm'
-
-function compileAndExecute(code: string): AsmValue {
-    const program = compile(code)
-    const context = new VM(program)
-    const result = context.run()
-    return result
-}
+import { EAsmValueType } from '../common/asm'
+import { compileAndExecute } from '../wrapper'
 
 describe('math', () => {
     describe('add', () => {

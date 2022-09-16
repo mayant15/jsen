@@ -1,42 +1,73 @@
-import { createAddInstr, createDivInstr, createMulInstr, createPushInstr, createSubInstr, EAsmValueType, Program } from "../common/asm"
+import { AsmValue, createAddInstr, createDivInstr, createMulInstr, createPushInstr, createSubInstr, EAsmValueType, Program } from "../common/asm"
 import { Ast } from "./ast"
 
-namespace AsmGenVisitor {
-    export type Context = Program
+type Identifier = string
 
-    export function visitMain(node: Ast.MainNode, context: Context = {
+enum ESymbolKind {
+    LITERAL,
+    ALIAS,
+}
+
+type LiteralSymbolInfo = {
+    kind: ESymbolKind.LITERAL
+    isConstant: boolean
+    isLiteral: true
+    value: AsmValue
+}
+
+type AliasSymbolInfo = {
+    kind: ESymbolKind.ALIAS
+    isConstant: boolean
+    isLiteral: false
+    value: Identifier
+}
+
+type SymbolInfo = AliasSymbolInfo | LiteralSymbolInfo
+
+type SymbolTable = Record<Identifier, SymbolInfo>
+
+type Context = Program
+
+class AsmGenVisitor {
+    private _symbolTable: SymbolTable
+
+    constructor() {
+        this._symbolTable = {}
+    }
+
+    visitMain(node: Ast.MainNode, context: Context = {
         instrs: [],
         labels: {}
     }): Program {
         for (const statement of node.body) {
             // TODO: Don't mutate context (?)
-            _visitStatement(statement, context)
+            this._visitStatement(statement, context)
         }
 
         return context
     }
 
-    function _visitStatement(node: Ast.StatementNode, context: Context) {
+    private _visitStatement(node: Ast.StatementNode, context: Context) {
         switch (node.type) {
             case "ExpressionStatement":
-                _visitExpressionStatement(node, context)
+                this._visitExpressionStatement(node, context)
                 break
             default:
                 throw Error(`[compiler] unsupported statement type ${node.type}`)
         }
     }
 
-    function _visitExpressionStatement({ expression }: Ast.ExpressionNode, context: Context) {
+    private _visitExpressionStatement({ expression }: Ast.ExpressionNode, context: Context) {
         switch (expression.type) {
             case "BinaryExpression":
-                _visitBinaryExpression(expression, context)
+                this._visitBinaryExpression(expression, context)
                 break
             default:
                 throw Error(`[compiler] unsupported expression type ${expression.type}`)
         }
     }
 
-    function _visitBinaryExpression(expr: Ast.BinaryExpressionNode, context: Context) {
+    private _visitBinaryExpression(expr: Ast.BinaryExpression, context: Context) {
         // Emit right instruction first for SUB and DIV
         switch (expr.right.type) {
             case 'NumericLiteral':
@@ -95,6 +126,7 @@ namespace AsmGenVisitor {
 }
 
 export const toAsmProgram = (ast: Ast.MainNode): Program => {
-    return AsmGenVisitor.visitMain(ast)
+    const generator = new AsmGenVisitor()
+    return generator.visitMain(ast)
 }
 

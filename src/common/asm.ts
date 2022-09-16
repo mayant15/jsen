@@ -4,7 +4,7 @@ export enum EOpCode {
     SUB = 'SUB',  // a = pop(), b = pop(), push(a - b)
     MUL = 'MUL',  // a = pop(), b = pop(), push(a * b)
     DIV = 'DIV',  // a = pop(), b = pop(), push(a / b)
-    PUSH = 'PUSH', // Pushes an IRValue to the stack
+    PUSH = 'PUSH', // Pushes an AsmValue to the stack
 }
 
 export type AddInstr = {
