@@ -5,6 +5,12 @@ export enum EOpCode {
     MUL = 'MUL',  // a = pop(), b = pop(), push(a * b)
     DIV = 'DIV',  // a = pop(), b = pop(), push(a / b)
     PUSH = 'PUSH', // Pushes an AsmValue to the stack
+
+    // Object manipulation
+    CREATE = 'CREATE', // create an object and push the address on the stack
+    DESTROY = 'DESTROY', // a = pop(), delete a
+    SET_PROP = 'SET_PROP', // a = pop(), b = pop(), c = pop(), a.b = c
+    GET_PROP = 'GET_PROP', // a = pop(), b = pop(), push(a.b)
 }
 
 export type AddInstr = {
@@ -59,7 +65,39 @@ export const createPushInstr = (value: AsmValue): PushInstr => ({
     argc: 1
 })
 
-export type Instr = AddInstr | SubInstr | MulInstr | DivInstr | PushInstr
+export type CreateInstr = {
+    readonly opcode: EOpCode.CREATE
+}
+
+export const createCreateInstr = (): CreateInstr => ({
+    opcode: EOpCode.CREATE
+})
+
+export type DestroyInstr = {
+    readonly opcode: EOpCode.DESTROY
+}
+
+export const createDestroyInstr = (): DestroyInstr => ({
+    opcode: EOpCode.DESTROY
+})
+
+export type GetPropInstr = {
+    readonly opcode: EOpCode.GET_PROP
+}
+
+export const createGetPropInstr = (): GetPropInstr => ({
+    opcode: EOpCode.GET_PROP
+})
+
+export type SetPropInstr = {
+    readonly opcode: EOpCode.SET_PROP
+}
+
+export const createSetPropInstr = (): SetPropInstr => ({
+    opcode: EOpCode.SET_PROP
+})
+
+export type Instr = AddInstr | SubInstr | MulInstr | DivInstr | PushInstr | CreateInstr | DestroyInstr | GetPropInstr | SetPropInstr
 
 export enum EAsmValueType {
     STRING = 'STRING',
@@ -79,7 +117,8 @@ type NumberAsmValue = {
 
 type ObjectAsmValue = {
     kind: EAsmValueType.OBJECT
-    data: Record<string, unknown>
+    /* An object AsmValue is a reference to a location on the heap */
+    data: number
 }
 
 export type AsmValue = StringAsmValue | NumberAsmValue | ObjectAsmValue

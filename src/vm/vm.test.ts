@@ -1,6 +1,6 @@
 import { VM } from './vm'
 import { describe, it, expect } from '@jest/globals'
-import { createAddInstr, createDivInstr, createMulInstr, createPushInstr, createSubInstr, EAsmValueType } from '../common/asm'
+import { createAddInstr, createCreateInstr, createDivInstr, createMulInstr, createPushInstr, createSubInstr, EAsmValueType } from '../common/asm'
 
 describe('vm', () => {
     describe('ADD', () => {
@@ -129,6 +129,41 @@ describe('vm', () => {
             const { kind, data } = vm.run()
             expect(kind).toBe(EAsmValueType.NUMBER)
             expect(data).toBe(1)
+        })
+    })
+
+    describe('CREATE', () => {
+        it('should push allocated address to the stack', () => {
+            const vm = new VM({
+                instrs: [
+                    createCreateInstr(),
+                ],
+                labels: {}
+            })
+            const { kind, data } = vm.run()
+
+            // Accessing private field _heap
+            // @ts-ignore
+            const obj = vm._heap.get(data)
+
+            expect(kind).toBe(EAsmValueType.OBJECT)
+            expect(obj).not.toBeNull()
+        })
+
+        it('should create empty object in heap', () => {
+            const vm = new VM({
+                instrs: [
+                    createCreateInstr(),
+                ],
+                labels: {}
+            })
+            const { data } = vm.run()
+
+            // Accessing private field _heap
+            // @ts-ignore
+            const obj = vm._heap.get(data)
+
+            expect(obj).toEqual({})
         })
     })
 })

@@ -1,13 +1,20 @@
 import { AsmValue, EAsmValueType, EOpCode, Instr, Program } from "../common/asm";
+import { Heap } from "./heap";
 import { Stack } from "./stack";
+
+export type HeapObject = {
+    [K in string | number]: AsmValue
+}
 
 export class VM {
     private _stack: Stack<AsmValue>
+    private _heap: Heap<HeapObject>
     private _program: Program
     private _currentInstrIdx: number
 
     constructor(program: Program) {
         this._stack = new Stack<AsmValue>();
+        this._heap = new Heap<HeapObject>();
         this._program = program;
         this._currentInstrIdx = 0;
     }
@@ -35,6 +42,14 @@ export class VM {
                 return this._interpretDiv()
             case EOpCode.PUSH:
                 return this._interpretPush(instr.data)
+            case EOpCode.CREATE:
+                return this._interpretCreate()
+            case EOpCode.DESTROY:
+                return this._interpretDestroy()
+            case EOpCode.GET_PROP:
+                return this._interpretGetProp()
+            case EOpCode.SET_PROP:
+                return this._interpretSetProp()
             default:
                 // If all cases are handled above, TypeScript will give `instr` the type `never`, because
                 // this branch will never run. But I still want to keep this here so that I don't have to
@@ -42,6 +57,58 @@ export class VM {
                 // @ts-ignore
                 throw Error(`[vm] Unsupported instruction: ${instr.opcode.toString()}`)
         }
+    }
+
+    private _interpretCreate() {
+        const address = this._heap.create()
+        this._heap.set(address, {})
+        this._stack.push({
+            kind: EAsmValueType.OBJECT,
+            data: address,
+        })
+    }
+
+    private _interpretDestroy() {
+        const obj = this._stack.pop()
+        if (obj.kind !== EAsmValueType.OBJECT) {
+            throw Error(`[vm] DESTROY called on a non-object value, type ${obj.kind}`)
+        }
+
+        this._heap.destroy(obj.data)
+    }
+
+    private _interpretGetProp() {
+        const obj = this._stack.pop()
+        const key = this._stack.pop()
+
+        if (obj.kind !== EAsmValueType.OBJECT) {
+            throw Error(`[vm] GET_PROP called on a non-object value, type ${obj.kind}`)
+        }
+
+        if (key.kind !== EAsmValueType.NUMBER && key.kind !== EAsmValueType.STRING) {
+            throw Error(`[vm] GET_PROP called with key of type ${key.kind}. Only string and number keys are supported`)
+        }
+
+        const heapObj = this._heap.get(obj.data)
+        this._stack.push(heapObj[key.data])
+
+    }
+
+    private _interpretSetProp() {
+        const obj = this._stack.pop()
+        const key = this._stack.pop()
+        const value = this._stack.pop()
+
+        if (obj.kind !== EAsmValueType.OBJECT) {
+            throw Error(`[vm] SET_PROP called on a non-object value, type ${obj.kind}`)
+        }
+
+        if (key.kind !== EAsmValueType.NUMBER && key.kind !== EAsmValueType.STRING) {
+            throw Error(`[vm] SET_PROP called with key of type ${key.kind}. Only string and number keys are supported`)
+        }
+
+        const heapObj = this._heap.get(obj.data)
+        heapObj[key.data] = value
     }
 
     private _interpretAdd() {
