@@ -9,8 +9,12 @@ export enum EOpCode {
     // Object manipulation
     CREATE = 'CREATE', // create an object and push the address on the stack
     DESTROY = 'DESTROY', // a = pop(), delete a
-    SET_PROP = 'SET_PROP', // a = pop(), b = pop(), c = pop(), a.b = c
-    GET_PROP = 'GET_PROP', // a = pop(), b = pop(), push(a.b)
+    SET_PROP = 'SET_PROP', // c = pop(), b = pop(), a = pop(), a.b = c, push(a)
+    GET_PROP = 'GET_PROP', // b = pop(), a = pop(), push(a.b)
+
+    // Symbols
+    SET_SYM = 'SET_SYM', // b = pop(), a = pop(), symbols[a] = b -- Set a value 'b' to an identifier 'a' in the runtime symbol table
+    GET_SYM = 'GET_SYM' // a = pop(), push(symbols[a]) -- Fetch a symbol from the VM symbol table and push to the stack
 }
 
 export type AddInstr = {
@@ -97,7 +101,23 @@ export const createSetPropInstr = (): SetPropInstr => ({
     opcode: EOpCode.SET_PROP
 })
 
-export type Instr = AddInstr | SubInstr | MulInstr | DivInstr | PushInstr | CreateInstr | DestroyInstr | GetPropInstr | SetPropInstr
+export type SetSymInstr = {
+    readonly opcode: EOpCode.SET_SYM
+}
+
+export const createSetSymInstr = (): SetSymInstr => ({
+    opcode: EOpCode.SET_SYM
+})
+
+export type GetSymInstr = {
+    readonly opcode: EOpCode.GET_SYM
+}
+
+export const createGetSymInstr = (): GetSymInstr => ({
+    opcode: EOpCode.GET_SYM
+})
+
+export type Instr = AddInstr | SubInstr | MulInstr | DivInstr | PushInstr | CreateInstr | DestroyInstr | GetPropInstr | SetPropInstr | SetSymInstr | GetSymInstr
 
 export enum EAsmValueType {
     STRING = 'STRING',
@@ -122,6 +142,12 @@ type ObjectAsmValue = {
 }
 
 export type AsmValue = StringAsmValue | NumberAsmValue | ObjectAsmValue
+
+// TODO: Use -1 as undefined for now
+export const UndefinedAsmValue: NumberAsmValue = {
+    kind: EAsmValueType.NUMBER,
+    data: -1
+}
 
 export type Program = {
     instrs: Instr[]

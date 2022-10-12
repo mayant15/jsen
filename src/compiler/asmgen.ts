@@ -1,40 +1,11 @@
-import { AsmValue, createAddInstr, createDivInstr, createMulInstr, createPushInstr, createSubInstr, EAsmValueType, Program } from "../common/asm"
+import { exportAllDeclaration } from "@babel/types"
+import { AsmValue, createAddInstr, createCreateInstr, createDivInstr, createGetPropInstr, createGetSymInstr, createMulInstr, createPushInstr, createSetPropInstr, createSetSymInstr, createSubInstr, EAsmValueType, Program, UndefinedAsmValue } from "../common/asm"
 import { Ast } from "./ast"
 
-enum ESymbolKind {
-    LITERAL,
-    ALIAS,
-    UNINITIALIZED,
-}
-
-type LiteralSymbolInfo = {
-    kind: ESymbolKind.LITERAL
-    isConstant: boolean
-    isLiteral: true
-    value: AsmValue
-}
-
-type AliasSymbolInfo = {
-    kind: ESymbolKind.ALIAS
-    isConstant: boolean
-    isLiteral: false
-    name: string
-}
-
-type UninitializedSymbolInfo = {
-    kind: ESymbolKind.UNINITIALIZED
-}
-
-type SymbolInfo = AliasSymbolInfo | LiteralSymbolInfo | UninitializedSymbolInfo
-
-type SymbolTable = Record<string, SymbolInfo>
-
 class AsmGenVisitor {
-    private _symbolTable: SymbolTable
     private _context: Program
 
     constructor() {
-        this._symbolTable = {}
         this._context = {
             instrs: [],
             labels: {}
@@ -82,32 +53,57 @@ class AsmGenVisitor {
             case 'Identifier':
                 this._visitIdentifierExpression(expr)
                 break
+            case 'ObjectExpression':
+                this._visitObjectExpression(expr)
+                break
+            case 'MemberExpression':
+                this._visitMemberExpression(expr)
+                break
             default:
                 // @ts-ignore
                 throw Error(`[compiler] unsupported expression type ${expr.type}`)
         }
     }
 
-    private _visitIdentifierExpression(expr: Ast.IdentifierExpression) {
-        // TODO: How is this even going to work? Push the contained value to the stack? Just handle literals for now
-        if (expr.id in this._symbolTable) {
-            const info = this._symbolTable[expr.id]
-            switch (info.kind) {
-                case ESymbolKind.LITERAL:
-                    this._context.instrs.push(createPushInstr(info.value))
-                    break
-                case ESymbolKind.ALIAS:
-                    this._visitIdentifierExpression({
-                        type: 'Identifier',
-                        id: expr.id,
-                    })
-                    break
-                default:
-                    throw Error(`[compiler] unsupported symbol kind ${info.kind}`)
+    private _visitObjectExpression(expr: Ast.ObjectExpression) {
+        // Create a new object
+        this._context.instrs.push(createCreateInstr())
+
+        // Add properties to that object
+        for (const { id, value } of expr.properties) {
+            if (typeof id === 'string') {
+                this._context.instrs.push(createPushInstr({
+                    kind: EAsmValueType.STRING,
+                    data: id
+                }))
+            } else {
+                this._context.instrs.push(createPushInstr({
+                    kind: EAsmValueType.NUMBER,
+                    data: id
+                }))
             }
-        } else {
-            throw Error(`[compiler] Undefined reference to "${expr.id}"`)
+
+            this._visitExpression(value)
+            this._context.instrs.push(createSetPropInstr())
         }
+    }
+
+    private _visitMemberExpression(expr: Ast.MemberExpression) {
+        // This should leave an object value on the stack
+        this._visitExpression(expr.object)
+
+        // This should leave a key on the stack
+        this._visitExpression(expr.property)
+
+        this._context.instrs.push(createGetPropInstr())
+    }
+
+    private _visitIdentifierExpression(expr: Ast.IdentifierExpression) {
+        this._context.instrs.push(createPushInstr({
+            kind: EAsmValueType.STRING,
+            data: expr.id
+        }))
+        this._context.instrs.push(createGetSymInstr())
     }
 
     private _visitNumericLiteralExpression(expr: Ast.NumericLiteralExpression) {
@@ -118,7 +114,6 @@ class AsmGenVisitor {
     }
 
     private _visitStringLiteralExpression(expr: Ast.StringLiteralExpression) {
-
         this._context.instrs.push(createPushInstr({
             kind: EAsmValueType.STRING,
             data: expr.value
@@ -152,52 +147,25 @@ class AsmGenVisitor {
     }
 
     private _visitVariableDeclaration(node: Ast.VariableDeclarationNode) {
-        if (node.id in this._symbolTable) {
-            throw Error(`[compiler] SyntaxError: Redeclaration of variable ${node.id}`)
+        if (node.isConst && node.init === null) {
+            throw Error(`[compiler] SyntaxError: const variables must be initialized`)
         }
 
+        // Push the identifier name
+        this._context.instrs.push(createPushInstr({
+            kind: EAsmValueType.STRING,
+            data: node.id
+        }))
+
+        // Push the value
         if (node.init) {
-            switch (node.init.type) {
-                case "Identifier":
-                    this._symbolTable[node.id] = {
-                        kind: ESymbolKind.ALIAS,
-                        isConstant: node.isConst,
-                        isLiteral: false,
-                        name: node.init.id
-                    }
-                    break
-                case 'StringLiteral':
-                    this._symbolTable[node.id] = {
-                        kind: ESymbolKind.LITERAL,
-                        isConstant: node.isConst,
-                        isLiteral: true,
-                        value: {
-                            kind: EAsmValueType.STRING,
-                            data: node.init.value
-                        }
-                    }
-                    break
-                case 'NumericLiteral':
-                    this._symbolTable[node.id] = {
-                        kind: ESymbolKind.LITERAL,
-                        isConstant: node.isConst,
-                        isLiteral: true,
-                        value: {
-                            kind: EAsmValueType.NUMBER,
-                            data: node.init.value
-                        }
-                    }
-                    break
-            }
+            this._visitExpression(node.init)
         } else {
-            if (node.isConst) {
-                throw Error(`[compiler] SyntaxError: const variables must be initialized`)
-            } else {
-                this._symbolTable[node.id] = {
-                    kind: ESymbolKind.UNINITIALIZED,
-                }
-            }
+            this._context.instrs.push(createPushInstr(UndefinedAsmValue))
         }
+
+        // Set value to name in VM symbol table
+        this._context.instrs.push(createSetSymInstr())
     }
 }
 

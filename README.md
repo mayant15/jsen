@@ -8,9 +8,9 @@ subset of ECMAScript with no GC.
 ### Supported JS
 - [x] Math operations on literals
 - [x] Stack
-- [ ] Primitive variables and runtime types (All values are allocated on the heap)
-- [ ] Heap
-- [ ] Objects (allocate/deallocate objects)
+- [x] Primitive variables and runtime types
+- [x] Heap
+- [x] Objects (allocate/deallocate objects)
 - [ ] Functions
 
 ### Jsen

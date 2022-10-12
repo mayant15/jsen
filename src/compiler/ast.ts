@@ -28,7 +28,23 @@ export namespace Ast {
         id: string
     }
 
-    export type Expression = BinaryExpression | NumericLiteralExpression | StringLiteralExpression | IdentifierExpression
+    export type ObjectProperty = {
+        id: string | number
+        value: Expression
+    }
+
+    export type ObjectExpression = {
+        type: 'ObjectExpression'
+        properties: ObjectProperty[]
+    }
+
+    export type MemberExpression = {
+        type: 'MemberExpression'
+        object: Expression
+        property: Expression
+    }
+
+    export type Expression = BinaryExpression | NumericLiteralExpression | StringLiteralExpression | IdentifierExpression | ObjectExpression | MemberExpression
 
     export type ExpressionNode = {
         type: 'ExpressionStatement'
@@ -69,6 +85,13 @@ function visitExpressionStatement(node: Babel.ExpressionStatement): Ast.Expressi
     }
 }
 
+function visitPrivateName(node: Babel.PrivateName): Ast.IdentifierExpression {
+    return {
+        type: 'Identifier',
+        id: node.id.name,
+    }
+}
+
 function visitExpression(node: Babel.Expression): Ast.Expression {
     switch (node.type) {
         case 'NumericLiteral':
@@ -82,12 +105,11 @@ function visitExpression(node: Babel.Expression): Ast.Expression {
                 value: node.value
             }
         case 'BinaryExpression':
-            if (node.left.type === 'PrivateName') {
-                throw Error('[compiler] ParserError: Unsupported LHS `PrivateName`')
-            }
             return {
                 type: 'BinaryExpression',
-                left: visitExpression(node.left),
+                left: node.left.type === 'PrivateName'
+                    ? visitPrivateName(node.left)
+                    : visitExpression(node.left),
                 right: visitExpression(node.right),
                 operator: node.operator as any // TODO: I don't want to support all operators right now
             }
@@ -96,6 +118,10 @@ function visitExpression(node: Babel.Expression): Ast.Expression {
                 type: 'Identifier',
                 id: node.name
             }
+        case 'ObjectExpression':
+            return visitObjectExpression(node)
+        case 'MemberExpression':
+            return visitMemberExpression(node)
         default:
             throw Error(`[compiler] ParserError: Unsupported expression type ${node.type}`)
     }
@@ -114,6 +140,61 @@ function visitVariableDeclaration(node: Babel.VariableDeclaration): Ast.Variable
             isConst,
         }
     })
+}
+
+function visitObjectExpression(node: Babel.ObjectExpression): Ast.ObjectExpression {
+    function makeProperty(property: Babel.ObjectExpression['properties'][number]): Ast.ObjectProperty {
+        // TODO: Support member functions
+        if (property.type === 'ObjectMethod') {
+            throw Error(`[compiler] ParserError: Object methods are not supported`)
+        }
+
+        if (property.type === 'SpreadElement') {
+            throw Error(`[compiler] ParserError: Spread elements are not supported for object properties.`)
+        }
+
+        const key = property.key.type === 'Identifier'
+            ? property.key.name
+            : property.key.type === 'StringLiteral'
+                ? property.key.value
+                : null
+
+        if (key === null) {
+            throw Error(`[compiler] ParserError: Unsupported key for object ${property.key.type}`)
+        }
+
+        return {
+            id: key,
+            value: visitExpression(property.value as Babel.Expression) // TODO: Ignore Babel.PatternLike
+        }
+    }
+
+    return {
+        type: 'ObjectExpression',
+        properties: node.properties.map(makeProperty)
+    }
+}
+
+function visitMemberExpression(node: Babel.MemberExpression): Ast.MemberExpression {
+    // TODO: Only string literals are supported for member access
+    const key = node.property.type === 'Identifier'
+        ? node.property.name
+        : node.property.type === 'StringLiteral'
+            ? node.property.value
+            : null
+
+    if (key === null || node.property.type === 'PrivateName') {
+        throw Error(`[compiler] ParserError: Unsupported key for object ${node.property.type}`)
+    }
+
+    return {
+        type: 'MemberExpression',
+        object: visitExpression(node.object),
+        property: {
+            type: 'StringLiteral',
+            value: key
+        }
+    }
 }
 
 export const toAst = (parsed: ParseResult<Babel.File>): Ast.MainNode => {

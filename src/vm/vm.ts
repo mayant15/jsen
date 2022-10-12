@@ -6,13 +6,17 @@ export type HeapObject = {
     [K in string | number]: AsmValue
 }
 
+type SymbolTable = Record<string, AsmValue>
+
 export class VM {
+    private _symbolTable: SymbolTable
     private _stack: Stack<AsmValue>
     private _heap: Heap<HeapObject>
     private _program: Program
     private _currentInstrIdx: number
 
     constructor(program: Program) {
+        this._symbolTable = {}
         this._stack = new Stack<AsmValue>();
         this._heap = new Heap<HeapObject>();
         this._program = program;
@@ -50,6 +54,10 @@ export class VM {
                 return this._interpretGetProp()
             case EOpCode.SET_PROP:
                 return this._interpretSetProp()
+            case EOpCode.SET_SYM:
+                return this._interpretSetSym()
+            case EOpCode.GET_SYM:
+                return this._interpretGetSym()
             default:
                 // If all cases are handled above, TypeScript will give `instr` the type `never`, because
                 // this branch will never run. But I still want to keep this here so that I don't have to
@@ -78,8 +86,8 @@ export class VM {
     }
 
     private _interpretGetProp() {
-        const obj = this._stack.pop()
         const key = this._stack.pop()
+        const obj = this._stack.pop()
 
         if (obj.kind !== EAsmValueType.OBJECT) {
             throw Error(`[vm] GET_PROP called on a non-object value, type ${obj.kind}`)
@@ -95,9 +103,9 @@ export class VM {
     }
 
     private _interpretSetProp() {
-        const obj = this._stack.pop()
-        const key = this._stack.pop()
         const value = this._stack.pop()
+        const key = this._stack.pop()
+        const obj = this._stack.pop()
 
         if (obj.kind !== EAsmValueType.OBJECT) {
             throw Error(`[vm] SET_PROP called on a non-object value, type ${obj.kind}`)
@@ -109,6 +117,8 @@ export class VM {
 
         const heapObj = this._heap.get(obj.data)
         heapObj[key.data] = value
+
+        this._stack.push(obj)
     }
 
     private _interpretAdd() {
@@ -196,6 +206,29 @@ export class VM {
     }
 
     private _interpretPush(value: AsmValue) {
+        this._stack.push(value)
+    }
+
+    private _interpretSetSym() {
+        const value = this._stack.pop()
+        const identifier = this._stack.pop()
+
+        if (identifier.kind !== EAsmValueType.STRING) {
+            throw Error(`[vm] SET_SYM only supports string identifiers, found ${identifier.kind}`)
+        }
+
+        this._symbolTable[identifier.data] = value
+    }
+
+    private _interpretGetSym() {
+        const identifier = this._stack.pop()
+
+        if (identifier.kind !== EAsmValueType.STRING) {
+            throw Error(`[vm] GET_SYM only supports string identifiers, found ${identifier.kind}`)
+        }
+
+        const value = this._symbolTable[identifier.data]
+
         this._stack.push(value)
     }
 }
